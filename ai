@@ -1,0 +1,57 @@
+LIBRARY_URL = "https://raw.githubusercontent.com/asutse0/2882837372_wowo/refs/heads/main/ww"
+local WORKER_URL = "https://robloxrq.asutse0.workers.dev"
+
+local function getRequestFunction()
+    if type(request) == "function" then
+        return request
+    end
+
+    if syn and type(syn.request) == "function" then
+        return syn.request
+    end
+
+    if http and type(http.request) == "function" then
+        return http.request
+    end
+
+    if type(http_request) == "function" then
+        return http_request
+    end
+
+    return nil
+end
+
+if not getRequestFunction() then
+    warn("[Traceless] request() was not found. This loader needs an environment that supports request().")
+    return
+end
+
+local ok, LibraryOrError = pcall(function()
+    return loadstring(game:HttpGet(LIBRARY_URL))()
+end)
+
+if not ok or type(LibraryOrError) ~= "table" then
+    warn("[Traceless] Failed to load UI library:", LibraryOrError)
+    return
+end
+
+local Library = LibraryOrError
+
+Library:SetWorkerUrl(WORKER_URL)
+
+local Window = Library:CreateWindow({
+    Title = "Traceless Assistant",
+    Subtitle = "Cloudflare Roblox AI helper",
+    Size = UDim2.fromOffset(480, 390),
+    Position = UDim2.new(0.5, -240, 0.5, -195),
+    DestroyOld = true
+})
+
+local ChatTab = Window:AddTab("Chat")
+
+local Chat = Library:AddTracelessChat(ChatTab, {
+    OutputHeight = 155,
+    AutoRegister = true
+})
+
+return Library
