@@ -1,57 +1,84 @@
-LIBRARY_URL = "https://raw.githubusercontent.com/asutse0/2882837372_wowo/refs/heads/main/ww"
+local UI_URL = "https://raw.githubusercontent.com/asutse0/2882837372_wowo/refs/heads/main/ww?v=183"
+local DEX_URL = "https://raw.githubusercontent.com/asutse0/Dex/refs/heads/main/ai"
 local WORKER_URL = "https://robloxrq.asutse0.workers.dev"
 
 local function getRequestFunction()
-    if type(request) == "function" then
-        return request
-    end
+	if type(request) == "function" then
+		return request
+	end
 
-    if syn and type(syn.request) == "function" then
-        return syn.request
-    end
+	if syn and type(syn.request) == "function" then
+		return syn.request
+	end
 
-    if http and type(http.request) == "function" then
-        return http.request
-    end
+	if http and type(http.request) == "function" then
+		return http.request
+	end
 
-    if type(http_request) == "function" then
-        return http_request
-    end
+	if type(http_request) == "function" then
+		return http_request
+	end
 
-    return nil
+	return nil
 end
 
 if not getRequestFunction() then
-    warn("[Traceless] request() was not found. This loader needs an environment that supports request().")
-    return
+	warn("[Traceless] request() was not found. This loader needs an environment that supports request().")
+	return
 end
 
-local ok, LibraryOrError = pcall(function()
-    return loadstring(game:HttpGet(LIBRARY_URL))()
+local okLibrary, LibraryOrError = pcall(function()
+	return loadstring(game:HttpGet(UI_URL))()
 end)
 
-if not ok or type(LibraryOrError) ~= "table" then
-    warn("[Traceless] Failed to load UI library:", LibraryOrError)
-    return
+if not okLibrary or type(LibraryOrError) ~= "table" then
+	warn("[Traceless] Failed to load UI library:", LibraryOrError)
+	return
 end
 
 local Library = LibraryOrError
-
 Library:SetWorkerUrl(WORKER_URL)
 
+local okDex, DexInstallerOrError = pcall(function()
+	return loadstring(game:HttpGet(DEX_URL))()
+end)
+
+if okDex and type(DexInstallerOrError) == "function" then
+	local okInstall, installError = pcall(function()
+		DexInstallerOrError(Library)
+	end)
+
+	if not okInstall then
+		warn("[Traceless] Dex install failed:", installError)
+	end
+else
+	warn("[Traceless] Dex extension did not load:", DexInstallerOrError)
+end
+
 local Window = Library:CreateWindow({
-    Title = "Traceless Assistant",
-    Subtitle = "Cloudflare Roblox AI helper",
-    Size = UDim2.fromOffset(480, 390),
-    Position = UDim2.new(0.5, -240, 0.5, -195),
-    DestroyOld = true
+	Title = "Traceless Assistant",
+	Subtitle = "Cloudflare Roblox AI helper",
+	Size = UDim2.fromOffset(500, 405),
+	Position = UDim2.new(0.5, -250, 0.5, -202),
+	DestroyOld = true
 })
 
 local ChatTab = Window:AddTab("Chat")
+local ExtraTab = Window:AddTab("Extra")
 
 local Chat = Library:AddTracelessChat(ChatTab, {
-    OutputHeight = 155,
-    AutoRegister = true
+	OutputHeight = 155,
+	AutoRegister = true
 })
+
+if Library.AddDexToggle then
+	Library:AddDexToggle(ExtraTab, {
+		Chat = Chat,
+		SearchLimit = 250
+	})
+else
+	ExtraTab:AddLabel("Dex extension was not loaded.")
+	ExtraTab:AddLabel("Check that DEX_URL is raw GitHub and returns the extension code.")
+end
 
 return Library
